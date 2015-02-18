@@ -3,6 +3,10 @@ emulate_right_click translates CONTROL+left_click to a right_click mouse event.
 I don't like the double finger tap on my touchpad (trackpad) so I tried this instead. This
 can be useful if you mouse doesn't have a right button -- or if it is broken.
 
+Disclaimer: this is my first windows program ... likely it doesn't work as intented in
+every case -- although it's working for me know. Use at your own risk. Check the source
+code if you are worried, it is small.
+
 The combination CONTROL+left_click is hardcoded for now, but changing it is relatively
 simple.
 
