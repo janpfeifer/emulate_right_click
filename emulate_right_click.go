@@ -22,9 +22,17 @@
 package main
 
 import (
+	"log"
+	"syscall"
 	"unsafe"
 
 	"github.com/AllenDang/w32"
+)
+
+var (
+	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
+
+	procExitProcess = modkernel32.NewProc("ExitProcess")
 )
 
 const (
@@ -48,10 +56,14 @@ func main() {
 	hinst := w32.GetModuleHandle("")
 	//hHook = w32.SetWindowsHookEx(w32.WH_KEYBOARD_LL, KeyboardHook, hinst, 0)
 	hHook = w32.SetWindowsHookEx(w32.WH_MOUSE_LL, MouseHook, hinst, 0)
-	for {
-		w32.GetMessage(nil, 0, 0, 0) // NOP while not WM_QUIT
+	for w32.GetMessage(nil, 0, w32.WM_QUIT, w32.WM_QUIT+1) != 0 {
+		// NOP while not WM_QUIT
 	}
 	w32.UnhookWindowsHookEx(hHook)
+}
+
+func ExitProcess(uExitCode uint32) {
+	procExitProcess.Call(uintptr(uExitCode))
 }
 
 func MouseHook(nCode int, wParam w32.WPARAM, lParam w32.LPARAM) w32.LRESULT {
@@ -71,6 +83,15 @@ func checkClick(wParam w32.WPARAM) bool {
 	if w32.GetAsyncKeyState(w32.VK_CONTROL)&uint16(0x8000) == 0 {
 		return false
 	}
+
+	// Secret exit: Control + A + Left click
+	if w32.GetAsyncKeyState(int(VK_A_KEY))&uint16(0x8000) != 0 {
+		w32.UnhookWindowsHookEx(hHook)
+		log.Printf("Finishing ...\n")
+		ExitProcess(0)
+		return false
+	}
+
 	if wParam == w32.WM_LBUTTONUP {
 		rightButtonUp()
 	} else {
@@ -79,7 +100,7 @@ func checkClick(wParam w32.WPARAM) bool {
 	return true
 }
 
-func rightButtonDown() {
+func rightButtonUp() {
 	var inputs []w32.INPUT
 	inputs = append(inputs, w32.INPUT{
 		Type: w32.INPUT_MOUSE,
@@ -90,7 +111,7 @@ func rightButtonDown() {
 	w32.SendInput(inputs)
 }
 
-func rightButtonUp() {
+func rightButtonDown() {
 	var inputs []w32.INPUT
 	inputs = append(inputs, w32.INPUT{
 		Type: w32.INPUT_MOUSE,
